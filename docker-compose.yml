@@ -1,0 +1,15 @@
+version: '3.6'
+
+services:
+  app:
+    build: .
+    command: python src/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code # ensure changes made in the sourcecode are reflected in the container without rebuilding it
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+  db:
+    image: postgres
+    restart: always
