@@ -25,7 +25,7 @@ SECRET_KEY = 'qmbr1uaovfih$l&+phlem*m)1ggb&fghn*29@^bj_kt$ce*&$d'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1']
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -48,6 +49,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    ('django.contrib.auth.backends.ModelBackend'),
+)
 
 ROOT_URLCONF = 'grind.urls'
 
@@ -122,3 +127,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+#+
+AUTH_USER_MODEL = "api.User" 
