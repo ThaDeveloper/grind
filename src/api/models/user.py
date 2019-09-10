@@ -1,5 +1,6 @@
 """User model module"""
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from .base_model import CommonFields
 from api.models.user_manager import UserManager
@@ -14,7 +15,9 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     first_name = models.CharField(max_length=30, null=False)
     last_name = models.CharField(max_length=30, null=False)
     email = models.EmailField(unique=True, null=False)
+    username = models.CharField(max_length=30, unique=True, null=False)
     password = models.CharField(max_length=128, null=False)
+    profile_picture = models.CharField(max_length=500, null=True)
     bio = models.TextField(null=True, blank=True)
     title = models.CharField(max_length=30, null=True)
     phone = models.CharField(max_length=30, null=True)
@@ -23,13 +26,15 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     address_2 = models.CharField(max_length=200, null=True)
     active = models.BooleanField(default=True)
     admin = models.BooleanField(default=False)
-    staff = models.BooleanField(default=True)
-    user_type = models.CharField(max_length=20, choices=USER_TYPE)
+    staff = models.BooleanField(default=False)
+    user_type = models.CharField(max_length=20, choices=USER_TYPE, null=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(auto_now=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['username',]
    
     class Meta:
         """metadata options."""
@@ -53,4 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     @property
     def is_superuser(self):
         """Check whether user is a super user."""
+        return self.admin
+
+    def has_perm(self, perm, obj=None):
         return self.admin

@@ -12,6 +12,7 @@ class UserManager(BaseUserManager):
     def create_user(
             self,
             email,
+            username,
             password=None,
             is_active=True,
             is_staff=False,
@@ -20,17 +21,21 @@ class UserManager(BaseUserManager):
         """Create user."""
         if not email:
             raise ValueError('Users must have an email address')
-        user = self.model(email=self.normalize_email(email))
+        if not username:
+            raise ValueError('Users must have a username')
+        user = self.model(email=self.normalize_email(email), username=username)
         user.active = is_active
+        user.staff = is_staff
         user.admin = is_admin
         user.set_password(password)
-        user.save()
+        user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password):
+    def create_superuser(self, email, username, password):
         """Create a superuser."""
         return self.create_user(
             email,
+            username,
             is_admin=True,
             is_active=True,
             is_staff=True,
