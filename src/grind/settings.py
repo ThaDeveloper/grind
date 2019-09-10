@@ -25,7 +25,7 @@ SECRET_KEY = 'qmbr1uaovfih$l&+phlem*m)1ggb&fghn*29@^bj_kt$ce*&$d'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0']
 
 
 # Application definition
@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api'
+    'api',
+    'rest_framework',
+    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
@@ -74,6 +76,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'grind.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    )
+}
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
