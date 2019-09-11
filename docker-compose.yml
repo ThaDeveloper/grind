@@ -13,3 +13,9 @@ services:
   db:
     image: postgres
     restart: always
+    environment:
+      - POSTGRES_USER=grind
+      - POSTGRES_PASSWORD=grind
+      - POSTGRES_DB=grind
+    ports: 
+     - "5432:5432"
