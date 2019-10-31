@@ -11,7 +11,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'grind' ,
         'USER': 'postgres',
-        'PASSWORD': '',
+        'PASSWORD': 'grind',
         'HOST': 'localhost',
         'PORT': 5432
     }

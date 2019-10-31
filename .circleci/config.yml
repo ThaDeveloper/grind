@@ -44,11 +44,12 @@ jobs:
             . env/bin/activate
             # notify Code Climate of a pending test report using `before-build`
             ./cc-test-reporter before-build
+            mkdir test-reports
             PYTHONPATH=src coverage run --source=api -m pytest
             coverage report
             coverage html
-            # upload test report to Code Climate using `after-build`
-            # ./cc-test-reporter after-build --coverage-input-type htmlcov --exit-code $?
+      # - store_test_results:
+      #     path: test-reports
       - store_artifacts:
-          path: test-reports
+          path: htmlcov
           destination: grind_test_reports
