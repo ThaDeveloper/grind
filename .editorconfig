@@ -1,0 +1,16 @@
+# https://EditorConfig.org
+
+# parent EditorConfig file
+root = true
+
+# Unix style newlines with a newline at end of every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# 4 spaces rather than tabs
+[*.py]
+indent_style = space
+indent_size = 4
+# defaul charsets
+charset = utf-8

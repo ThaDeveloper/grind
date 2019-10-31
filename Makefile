@@ -18,6 +18,7 @@ run:
 	@echo "Starting Grind ..."
 	@${DOCKER_UP}
 db:
-	@docker exec -it grind_db_1 psql -U grind
+	@docker exec -it grind_db psql -U grind
 app:
-	@docker exec -it grind_app_1 bash
+	@docker exec -it grind_app bash
+

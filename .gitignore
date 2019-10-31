@@ -4,3 +4,8 @@ venv
 *.pyc
 DS_Store
 settings.json
+.pytest_cache
+.vscode
+.pytest_cache
+.coverage
+htmlcov

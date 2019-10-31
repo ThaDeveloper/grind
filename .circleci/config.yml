@@ -1,0 +1,54 @@
+version: 2
+jobs:
+  build:
+    environment:
+      CC_TEST_REPORTER_ID: ${CC_TEST_REPORTER_ID}
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          DJANGO_SETTINGS_MODULE: grind.settings.test
+      - image: circleci/postgres:11.3
+        environment: # environment variables for the Postgres container.
+          POSTGRES_USER: postgres
+          POSTGRES_DB: grind
+    working_directory: ~/grind
+    branches:
+      only:
+        - master
+        - /ch-.*/
+        - /ft-.*/
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - v1-dependencies-*
+      - run:
+          name: Install dependencies
+          command: |
+            python3 -m venv env
+            . env/bin/activate
+            pip install -r requirements.txt
+      - save_cache:
+          key: v1-dependencies-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - ./env
+      - run:
+          name: Install Code Climate Test Reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - run:
+          name: Running tests
+          command: |
+            . env/bin/activate
+            # notify Code Climate of a pending test report using `before-build`
+            ./cc-test-reporter before-build
+            PYTHONPATH=src coverage run --source=api -m pytest
+            coverage report
+            coverage html
+            # upload test report to Code Climate using `after-build`
+            # ./cc-test-reporter after-build --coverage-input-type htmlcov --exit-code $?
+      - store_artifacts:
+          path: test-reports
+          destination: grind_test_reports
