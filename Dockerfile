@@ -10,4 +10,4 @@ RUN mkdir /code
 WORKDIR /code
 COPY . /code/
 RUN pip3 install --upgrade pip wheel
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r src/requirements.txt

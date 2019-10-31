@@ -84,20 +84,15 @@ REST_FRAMEWORK = {
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_NAME')
-DB_PORT = os.getenv('DB_PORT')
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'grind',
+        'USER': 'grind',
+        'PASSWORD': 'grind',
+        'HOST': 'db',
+        'PORT': 5432
     }
 }
 
@@ -142,4 +137,3 @@ STATIC_URL = '/static/'
 
 #+
 AUTH_USER_MODEL = "api.User" 
-CORS_ORIGIN_ALLOW_ALL = True
