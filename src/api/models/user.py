@@ -1,7 +1,12 @@
 """User model module"""
+import jwt
+from datetime import datetime, timedelta
+
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.conf import settings
+
 from .base_model import CommonFields
 from api.models.user_manager import UserManager
 
@@ -16,7 +21,7 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     last_name = models.CharField(max_length=30, null=False)
     email = models.EmailField(unique=True, null=False)
     username = models.CharField(max_length=30, unique=True, null=False)
-    password = models.CharField(max_length=128, null=False)
+    password = models.CharField(max_length=128,null=False)
     profile_picture = models.CharField(max_length=500, null=True)
     bio = models.TextField(null=True, blank=True)
     title = models.CharField(max_length=30, null=True)
@@ -59,6 +64,28 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     def is_superuser(self):
         """Check whether user is a super user."""
         return self.admin
+
+    @property
+    def token(self):
+        """
+        Get a user's token by calling `user.token`.
+        """
+        return self._generate_jwt_token()
+    
+    def _generate_jwt_token(self):
+        """
+        Generates a JSON Web Token for access to auth endpoints
+        """
+        dt = datetime.now() + timedelta(days=2)
+
+        token = jwt.encode({
+            'id': self.pk,
+            'username': self.username,
+            'email': self.email,
+            'exp': int(dt.strftime('%s'))
+        }, settings.SECRET_KEY, algorithm='HS256')
+
+        return token.decode('utf-8')
 
     def has_perm(self, perm, obj=None):
         return self.admin
