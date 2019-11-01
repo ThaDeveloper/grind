@@ -13,8 +13,11 @@ class UserManager(BaseUserManager):
             self,
             email,
             username,
-            password=None,
-            is_active=True,
+            password,
+            first_name=None,
+            last_name=None,
+            user_type=None,
+            is_active=False,
             is_staff=False,
             is_admin=False
         ):
@@ -30,14 +33,18 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
+    
+    def create_staffuser(self, username, email):
+        """Create a regular user."""
+        return self.create_user(username, email)
 
     def create_superuser(self, email, username, password):
         """Create a superuser."""
         return self.create_user(
             email,
             username,
-            is_admin=True,
+            password,
             is_active=True,
             is_staff=True,
-            password=password
+            is_admin=True
         )

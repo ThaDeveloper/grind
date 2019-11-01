@@ -5,12 +5,25 @@ from api.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Serializers new user request."""
+    # password should 8-128 chars and unreadable. Even if 
+    # listed(serializer requirement) under `fields` below 
+    # it won't be returned
+    password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        write_only=True
+    )
+
 
     class Meta:
         model = User
         fields = ("id", "first_name", "last_name",
-            "email", "username", "user_type",
+            "email", "username", "password", "user_type",
             "date_joined")
+    
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -28,11 +41,11 @@ class LoginSerializer(serializers.Serializer):
                     data['user'] = user
                 else:
                     raise serializers.ValidationError({
-                        "is_active": "User is deactivated"
+                        "is_inactive": "User is inactive. Please activate!"
                     })
             else:
                 raise serializers.ValidationError({
-                    "credentials": "Invalid credentials"
+                    "credentials": "Wrong email or password"
                 })
         else:
             raise serializers.ValidationError({

@@ -1,8 +1,8 @@
 import jwt
 
 from django.conf import settings
-
-from rest_framework import authentication, exceptions
+from rest_framework import authentication, exceptions, status
+from rest_framework.response import Response
 
 from api.models import User
 
@@ -27,15 +27,14 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
         if not auth_header:
             return None
 
-        if len(auth_header) == 1:
-            # Invalid token header. No credentials provided. Do not attempt to
+        if len(auth_header) != 2:
+            # Invalid token header. No credentials provided or wrong format. Do not attempt to
             # authenticate.
-            return None
-
-        elif len(auth_header) > 2:
-            # Invalid token header. The Token string should not contain spaces. Do
-            # not attempt to authenticate.
-            return None
+            raise exceptions.AuthenticationFailed({
+                "status": "error",
+                "message": "Wrong header format"},
+                status.HTTP_400_BAD_REQUEST
+                )
 
         # since python3 uses byte we have two decode the two header values
         prefix = auth_header[0].decode('utf-8')
@@ -44,10 +43,16 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
         if prefix.lower() != auth_header_prefix:
             # The auth header prefix is not what we expected. Do not attempt to
             # authenticate.
-            return None
+            raise exceptions.AuthenticationFailed({
+                "status": "error",
+                "message": "Token should be prefixed with `Bearer`"},
+                status.HTTP_400_BAD_REQUEST
+                )
 
         # By now, we are confident authentication will succeed to we pass the 
         # credentials to the method below
+        #set session
+        request.session['grind-jwt-token'] = token
         return self._authenticate_credentials(request, token)
 
     def _authenticate_credentials(self, request, token):
@@ -56,20 +61,44 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
         If success: return the user and token.
         If fails: throw an error.
         """
+    
+        payload = self.decode_token(token)
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY)
-        except:
-            msg = 'Invalid authentication. Could not decode token.'
-            raise exceptions.AuthenticationFailed(msg)
+            user = User.objects.get(email=payload['email'])
+            if not user.is_active:
+                data = {
+                    'status': "error",
+                    'message': "User is inactive."
+                }
+                raise exceptions.AuthenticationFailed(data, status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(pk=payload['id'])
+            return (user, token)
         except User.DoesNotExist:
-            msg = 'No user matching credentilas/token was found.'
-            raise exceptions.AuthenticationFailed(msg)
-
-        if not user.is_active:
-            msg = 'This user is inacctive.'
-            raise exceptions.AuthenticationFailed(msg)
-
-        return (user, token)
+            data = {
+                'status': "error",
+                'message': "No user matching credentials/token was found."
+            }
+            raise exceptions.AuthenticationFailed(data, status.HTTP_400_BAD_REQUEST)
+    
+    def decode_token(self, token):
+        """Decode token with secret."""
+        try:
+            return jwt.decode(token,
+                            settings.SECRET_KEY,
+                            algorithms=['HS256'])
+        except jwt.exceptions.ExpiredSignatureError:
+            data = {
+                'status': 'error',
+                'error': 'token_expired',
+                'message': 'Login again'
+            }
+            raise exceptions.AuthenticationFailed(
+                data, status.HTTP_401_UNAUTHORIZED)
+        except jwt.exceptions.InvalidTokenError:
+            data = {
+                'status': 'error',
+                'error': 'Invalid token',
+                'message': 'Ensure you are using a valid token'
+            }
+            raise exceptions.AuthenticationFailed(
+                data, status.HTTP_400_BAD_REQUEST)
