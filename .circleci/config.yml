@@ -46,8 +46,8 @@ jobs:
             ./cc-test-reporter before-build
             mkdir test-reports
             PYTHONPATH=src coverage run --source=api -m pytest
-            coverage report
-            coverage html
+            # coverage report
+            # coverage html
       # - store_test_results:
       #     path: test-reports
       - store_artifacts:
