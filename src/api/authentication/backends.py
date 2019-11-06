@@ -76,7 +76,7 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
         except User.DoesNotExist:
             data = {
                 'status': "error",
-                'message': "No user matching credentials/token was found."
+                'message': "No user matching credentials was found."
             }
             raise exceptions.AuthenticationFailed(data, status.HTTP_400_BAD_REQUEST)
     

@@ -14,9 +14,9 @@ class UserManager(BaseUserManager):
             email,
             username,
             password,
-            first_name=None,
-            last_name=None,
-            user_type=None,
+            first_name,
+            last_name,
+            user_type,
             is_active=False,
             is_staff=False,
             is_admin=False
@@ -26,7 +26,9 @@ class UserManager(BaseUserManager):
             raise ValueError('Users must have an email address')
         if not username:
             raise ValueError('Users must have a username')
-        user = self.model(email=self.normalize_email(email), username=username)
+        user = self.model(email=self.normalize_email(email),
+            username=username, first_name=first_name, last_name=last_name,
+            user_type=user_type)
         user.active = is_active
         user.staff = is_staff
         user.admin = is_admin

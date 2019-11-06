@@ -1,7 +1,17 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 
-from api.models import User
+from api.models import User, Profile
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Profile
+        fields = ('id', 'title', 'image', 'bio','phone',
+            'location', 'address_1', 'address_2')
+        read_only_fields = ('username',)
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -14,17 +24,34 @@ class UserSerializer(serializers.ModelSerializer):
         min_length=8,
         write_only=True
     )
+    profile = ProfileSerializer(required=False)
 
 
     class Meta:
         model = User
-        fields = ("id", "first_name", "last_name",
-            "email", "username", "password", "user_type",
-            "date_joined")
+        fields = ("id", "first_name", "last_name", "email",
+        "username", "password", "user_type", "profile", "date_joined")
     
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+    
+    def update(self, instance, validated_data):
+        """Performs an update on a User/Profile."""
+        password = validated_data.pop('password', None)
+        profile_data = validated_data.pop('profile', {})
 
+        for (key, value) in validated_data.items():
+            setattr(instance, key, value)
+
+        if password is not None:
+            instance.set_password(password)
+        instance.save()
+
+        for (key, value) in profile_data.items():
+            setattr(instance.profile, key, value)
+        instance.profile.save()
+
+        return instance
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.CharField()

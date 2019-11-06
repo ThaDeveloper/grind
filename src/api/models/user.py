@@ -18,7 +18,7 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
         ('professional', 'professional'),
         ('client', 'client')
     ]
-    USERNAME_REGEX = '^[a-zA-Z0-9.-]*$'
+    USERNAME_REGEX = '^[a-zA-Z]{2,}$'
     first_name = models.CharField(max_length=30, null=False)
     last_name = models.CharField(max_length=30, null=False)
     email = models.EmailField(unique=True, null=False)
@@ -26,20 +26,12 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
         max_length=30,
         validators=[
             RegexValidator(regex=USERNAME_REGEX,
-                           message='Username must be alphanumeric or contain -.',
+                           message='Username must be 2 or more alphabetic characters',
                            code='invalid_username'
             )],
         unique=True,
         null=False)
     password = models.CharField(max_length=128,null=False)
-    #TODO: Add to profile
-    # profile_picture = models.CharField(max_length=500, null=True)
-    # bio = models.TextField(null=True, blank=True)
-    # title = models.CharField(max_length=30, null=True)
-    # phone = models.CharField(max_length=30, null=True)
-    # location = models.CharField(max_length=30, null=True)
-    # address_1 = models.CharField(max_length=200, null=True)
-    # address_2 = models.CharField(max_length=200, null=True)
     active = models.BooleanField(default=True)
     admin = models.BooleanField(default=False)
     staff = models.BooleanField(default=False)
