@@ -4,11 +4,17 @@ from rest_framework import status
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import AllowAny
 
 from api.serializers import UserSerializer, LoginSerializer
 
 
 class UserViews(ViewSet):
+    """ 
+    New user registration view
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = UserSerializer
 
     def create(self, request):
         serializer = UserSerializer(data=request.data, context={'request': request})
@@ -29,11 +35,10 @@ class UserViews(ViewSet):
         if serializer.is_valid():
             user = serializer.validated_data.get('user')
             auth_login(request, user)
-            token, created = Token.objects.get_or_create(user=user)
             return Response(
                 {
                     'status': 'success',
-                    'token': token.key
+                    'token': user.token
                 }, status=status.HTTP_200_OK
             )
         return Response(

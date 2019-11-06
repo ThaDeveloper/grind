@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'qmbr1uaovfih$l&+phlem*m)1ggb&fghn*29@^bj_kt$ce*&$d'
+SECRET_KEY = os.getenv('SECRET_KEY', '#$@#$*120----')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -78,8 +78,11 @@ WSGI_APPLICATION = 'grind.wsgi.application'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
-    )
+        'api.authentication.backends.GrindJWTAuthentication',
+    ),
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': {'v1'},
+    'VERSION_PARAM': 'v',
 }
 
 # Database
