@@ -7,7 +7,7 @@ def generate_simple_token(email):
     """
     Generates a JSON Web Token
     """
-    dt = datetime.now() + timedelta(days=2)
+    dt = datetime.now() + timedelta(days=1)
 
     token = jwt.encode({
         'email': email,

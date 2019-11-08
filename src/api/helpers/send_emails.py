@@ -4,25 +4,28 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 
 from api.helpers.secure_links import account_url_metadata
+from api.models import User
 
-def send_activation_email(request):
+
+def send_account_email(request, subject, path, template):
     token, domain, protocol, uid, time = account_url_metadata(request)
+    email = request.data.get('email')
+    user = User.objects.filter(email=email).first()
     message = render_to_string(
-        'confirm_account.html', {
+        template, {
             'domain': domain,
             'uid': uid,
             'token': token,
-            'name': request.data['first_name'],
+            'name': user.first_name,
             'time': time,
-            'link': protocol + '://' + domain + '/accounts/activate/' + uid + '/' + token
+            'link': protocol + domain + path + uid + '/' + token
     })
 
-    mail_subject = 'Activate your account.'
-    to_email = request.data['email']
+    to_email = email
     from_email = os.getenv('DEFAULT_FROM_EMAIL')
     send_mail(
-        mail_subject,
-        'Verify your Account',
+        subject,
+        'Grind account contact',
         from_email, [
             to_email,
         ],
