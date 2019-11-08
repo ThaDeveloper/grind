@@ -116,3 +116,19 @@ class PasswordResetSerializer(serializers.Serializer):
     def validate_password(self, value):
         validate_password(value)
         return value
+
+
+class SecurityLinkSerializer(serializers.Serializer):
+    """ serialize and validate new sercuriy link """
+    req_type = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
+
+    def validate_req_type(self, value):
+        req_types = ["activate", "reset"]
+        if value not in req_types:
+            raise serializers.ValidationError('Invalid request type')
+        return value
+
+
+class ResetEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)

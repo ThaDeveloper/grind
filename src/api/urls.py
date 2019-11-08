@@ -36,17 +36,21 @@ send_reset_email = users.UserViews.as_view({
 password_reset_update = users.UpdatePasswordView.as_view({
     'post': 'password_reset_update'
 })
+generate_new_link = users.UserViews.as_view({
+    'post': 'generate_new_link'
+})
 
 urlpatterns = [
     path('accounts/register/', register, name='create-user'),
+    path('accounts/activate/<uid>/<token>/', activate_user, name='activate-user'),
     path('accounts/login/', login, name='user-login'),
     path('accounts/logout/', logout, name='user-logout'),
     path('accounts/update-password/', update_password, name='update-password'),
     path('accounts/password-reset/', send_reset_email, name='reset-password'),
     path('accounts/send-reset/<uid>/<token>/', password_reset_update, name='complete-reset'),
+    path('accounts/new-link/', generate_new_link, name='generate-new-link'),
     path('accounts/<username>/profile/', retrieve_profile, name='view-profile'),
     path('accounts/profile/update/', update_user, name='update-user'),
-    path('accounts/activate/<uid>/<token>/', activate_user, name='activate-user'),
     path('accounts/profile/delete/', delete_user, name='delete-my-account'),
     path('accounts/<pk>/delete/', admin_user_delete, name='admin-delete'),
 ]
