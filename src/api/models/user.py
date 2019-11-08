@@ -79,7 +79,7 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
         """
         Generates a JSON Web Token for access to auth endpoints
         """
-        dt = datetime.now() + timedelta(days=2)
+        dt = datetime.now() + timedelta(days=1)
 
         token = jwt.encode({
             'id': self.pk,

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 
 from api.models import User, Profile
 
@@ -79,3 +80,39 @@ class LoginSerializer(serializers.Serializer):
                 "fields": "Username and Password are required"
             })
         return data
+
+def match_password(password, confirm_password):
+    if password != confirm_password:
+            raise serializers.ValidationError({'password': 'Passwords don\'t match'})
+
+
+class UpdatePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        """ validate passwords with rules and check old pass in db"""
+        user = self.context.get('request').user
+        match_password(data.get('new_password'), data.get('confirm_password'))
+        if not user.check_password(data.get('old_password')):
+            raise serializers.ValidationError({'old_password': 'Wrong password'})
+        return data
+    
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        """ validate password """
+        match_password(data.get('password'), data.get('confirm_password'))
+        return data
+    
+    def validate_password(self, value):
+        validate_password(value)
+        return value
