@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_decode
 from rest_framework.viewsets import ViewSet
-from rest_framework.response import Response
-from rest_framework import status
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.http import HttpResponseRedirect
@@ -14,12 +12,14 @@ from django.core.exceptions import ValidationError
 
 from api.serializers import (
     UserSerializer, LoginSerializer,
-    UpdatePasswordSerializer, PasswordResetSerializer
+    UpdatePasswordSerializer, PasswordResetSerializer,
+    SecurityLinkSerializer
 )
 from api.helpers.send_emails import send_account_email
 from api.authentication.backends import GrindJWTAuthentication
 from api.models import User
 from api.helpers.jwt import generate_simple_token
+from api.helpers.get_response import custom_reponse
 
 jwt_auth = GrindJWTAuthentication()
 
@@ -33,120 +33,103 @@ class UserViews(ViewSet):
 
     def create(self, request):
         """ Register new user and send activation email"""
-        serializer = UserSerializer(data=request.data, context={'request': request})
+        serializer = UserSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid():
             try:
                 send_acccount_email(
                     request, 'Grind - Activate your account',
                     '/api/v1/accounts/activate/', 'confirm_account.html')
-            except (SMTPException, IndexError, TypeError) as e :
-                print(e)
-                return Response({
-                    'status': 'error',
-                    'message': 'An error occured, please retry'
-                }, status=status.HTTP_400_BAD_REQUEST)
+            except (SMTPException, IndexError, TypeError) as e:
+                return custom_reponse(
+                    'error', 400, message='An error occured, please retry',
+                    error_type='email_error')
             serializer.save()
-            return Response({
-                'status': 'success',
-                'message': 'Registered successfully, check your email to activate your account.',
-                'data': serializer.data
-            }, status=status.HTTP_201_CREATED)
-        return Response({
-            'status': 'error',
-            'error': 'bad_request',
-            'message': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
+            return custom_reponse(
+                'success', 201, serializer=serializer,
+                message='Registered successfully, check your email to activate your account.')
+        return custom_reponse('error', serializer, 400)
 
     def activate(self, request, uid, token):
         """ Get request for activating user account """
         try:
             uid = force_text(urlsafe_base64_decode(uid))
-            user = User.objects.get(email=uid)
+            user = get_object(User, uid, "User")
             decoded_token = jwt_auth.decode_token(token)
             now = int(datetime.now().strftime('%s'))
             if now > decoded_token['exp']:
-                return Response({
-                'status': 'error',
-                'message': 'Link has expired'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return custom_reponse('error', 400, message='Link has expired')
             else:
                 if user is not None and decoded_token['email'] == user.email:
                     user.active = True
                     user.save()
-                    #TODO: update redirect url to web-app login
-                    return HttpResponseRedirect(redirect_to='http://127.0.0.1:8000/?status=success')
+                    # TODO: update redirect url to web-app login
+                    return HttpResponseRedirect(
+                        redirect_to='http://127.0.0.1:8000/?status=success')
                 else:
-                    return Response('Activation link is invalid!')
-        except User.DoesNotExist:
-            return Response({
-                'status': 'error',
-                'message': 'No such user exists'
-            }, status=status.HTTP_400_BAD_REQUEST)
+                    return custom_reponse(
+                        'error', 400, message='Activation link is invalid!')
         except (TypeError, ValueError, OverflowError):
-            return Response({
-                'status': 'error',
-                'message': 'An error occured'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-
+            return custom_reponse('error', 400, message='An error occured')
 
     def login(self, request):
-        serializer = LoginSerializer(data=request.data, context={'request': request})
+        serializer = LoginSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.validated_data.get('user')
             auth_login(request, user)
-            return Response(
-                {
-                    'status': 'success',
-                    'token': user.token
-                }, status=status.HTTP_200_OK
-            )
-        return Response(
-            {
-                'status': 'error',
-                'error': 'login_error',
-                'message': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST
-        )
-
+            return custom_reponse(
+                'succes', 200, token=token, message='Login success')
+        return custom_reponse('error', serializer, 400,
+                              message='login_invalid')
 
     def send_reset_email(self, request):
         """ Send password reset email """
+        serializer = ResetEmailSerializer(data=request.data)
         email = request.data.get('email')
-        if not email:
-            return Response({
-                'status': 'error',
-                'message': 'Email is required'
-            })
-        try:
-            validate_email(email)
-        except ValidationError:
-            return Response({
-                'status': "error",
-                'message': "Invalid Email"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        try:
+        if serializer.is_valid():
             try:
-                User.objects.get(email=email)
-            except User.DoesNotExist:
-                return Response({
-                    'status': 'error',
-                    'message': 'No user with such email'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            send_account_email(
-                request, 'Grind - Password Reset',
-                '/api/v1/accounts/send-reset/', 'password_reset.html') 
-                #TODO: to update link to web-app reset password page
-            return Response({
-                'status': "success",
-                'message': "A reset link has been sent to your email"
-            }, status=status.HTTP_200_OK)
-        except (SMTPException, IndexError, TypeError):
-            return Response({
-                'status': 'error',
-                'message': 'An error occured, please retry'
-            }, status=status.HTTP_400_BAD_REQUEST)
+                get_object(User, email, "User")
+                send_account_email(
+                    request, 'Grind - Password Reset',
+                    '/api/v1/accounts/send-reset/', 'password_reset.html')
+                # TODO: to update link to web-app reset password page
+                return custom_reponse(
+                    'succes', 200,
+                    message="A reset link has been sent to your email")
+            except (SMTPException, IndexError, TypeError):
+                return custom_reponse(
+                    'error', 400, message='An error occured, please retry')
+        return custom_reponse('error', serializer, 400,
+                              error_type='bad_request')
+
+    def generate_new_link(self, request):
+        """ Generate new link after expiry """
+        email = request.data.get('email')
+        req_type = request.data.get('req_type')
+        serializer = SecurityLinkSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                get_object(User, email, "User")
+                if req_type == 'activate':
+                    path = '/api/v1/accounts/activate/'
+                    subject = 'Grind - Activate your account'
+                    template = 'confirm_account.html'
+                else:
+                    path = '/api/v1/accounts/send-reset/'
+                    subject = 'Grind - Password Reset'
+                    template = 'password_reset.html'
+                send_account_email(
+                    request, subject,
+                    path, template)
+                return custom_reponse(
+                    'succes', 200,
+                    message="A new link has been sent to your email")
+            except (SMTPException, IndexError, TypeError):
+                return custom_reponse(
+                    'error', 400, message='An error occured, please retry')
+        return custom_reponse(
+            'error', 400, serializer=serializer, error_type='bad_request')
 
 
 class UserUpdateDestroy(ViewSet):
@@ -155,6 +138,7 @@ class UserUpdateDestroy(ViewSet):
     serializer_class = UserSerializer
 
     def update(self, request):
+        """ Update user profile """
         user_data = request.data
         serializer_data = {
             'email': user_data.get('email', request.user.email),
@@ -172,56 +156,38 @@ class UserUpdateDestroy(ViewSet):
             }
         }
         serializer = self.serializer_class(
-        request.user, data=serializer_data, partial=True, context={'request': request}
-        )
+            request.user, data=serializer_data, partial=True,
+            context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                "status": "success",
-                "message": "Profile updated successfully",
-                "data": serializer.data}
-                , status=status.HTTP_200_OK)
-        return Response({
-                "status": "error",
-                "error": serializer.errors}
-                , status=status.HTTP_400_BAD_REQUEST)
-
+            return custom_reponse(
+                'succes', 200, message='Profile updated successfully',
+                serializer=serializer)
+        return custom_reponse('error', serializer, 400,
+                              error_type='bad_request')
 
     def logout(self, request):
         auth_logout(request)
-        return Response(
-            {
-                'status': "success",
-                'message': "You have been logged out"
-            }, status=status.HTTP_204_NO_CONTENT
-        )
-
+        return custom_reponse(
+            'success', 204, message='You have been logged out')
 
     def delete(self, request):
         request.user.delete()
-        return Response({
-            'status': 'success',
-            'message': 'Deleted successfully'
-        }, status=status.HTTP_204_NO_CONTENT)
-
+        return custom_reponse('success', 204, message='Deleted successfully')
 
     def admin_delete(self, request, pk):
         if request.user.has_perm:
             try:
                 User.objects.get(pk=pk).delete()
-                return Response({
-                    'status': 'success',
-                    'message': 'User ID:{} deleted successfully'.format(pk)
-                }, status=status.HTTP_204_NO_CONTENT)
+                return custom_reponse(
+                    'success', 204,
+                    message='User ID:{} deleted successfully'.format(pk))
             except User.DoesNotExist:
-                return Response({
-                'status': 'error',
-                'message': 'User ID:{} not found'.format(pk)
-            }, status=status.HTTP_404_NOT_FOUND)
-        return Response({
-                'status': 'error',
-                'message': 'You don\'t have permission to perform this action'
-            }, status=status.HTTP_403_FORBIDDEN)
+                return custom_reponse(
+                    'error', 404, message='User ID:{} not found'.format(pk))
+        return custom_reponse(
+            'error', 403,
+            message='You don\'t have permission to perform this action')
 
 
 class UpdatePasswordView(ViewSet):
@@ -232,47 +198,30 @@ class UpdatePasswordView(ViewSet):
         """ Change password"""
         passwords = request.data
         user = request.user
-        serializer = self.serializer_class(data=passwords, context={'request': request})
+        serializer = self.serializer_class(
+            data=passwords, context={'request': request})
         if serializer.is_valid():
             user.set_password(passwords.get('new_password'))
             user.save()
-            return Response({
-                    'status': 'success',
-                    'message': 'Password updated successfully'
-                }, status=status.HTTP_200_OK)
-        return Response({
-                    'status': 'error',
-                    'data': serializer.errors
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+            return custom_reponse(
+                'succes', 200, 'Password updated successfully')
+        return custom_reponse('error', serializer, 400)
 
     def password_reset_update(self, request, uid, token):
         """ Update the new password to db """
         decoded_token = jwt_auth.decode_token(token)
         now = int(datetime.now().strftime('%s'))
         if now > decoded_token['exp']:
-            return Response({
-                'status': 'error',
-                'message': 'Link has expired'
-                }, status=status.HTTP_400_BAD_REQUEST) #TODO: add generate new link endpoint
-        serializer = PasswordResetSerializer(data=request.data, context={'request': request})
+            # TODO: add generate new link endpoint
+            return custom_reponse('error', 400, message='Link has expired')
+        serializer = PasswordResetSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid():
-            try:
-                uid = force_text(urlsafe_base64_decode(uid))
-                user = User.objects.get(email=uid)
-                password = request.data.get('password')
-                user.set_password(password)
-                user.save()
-                return Response({
-                    "status": "success",
-                    "message": "Password successfully updated"
-                }, status=status.HTTP_200_OK)
-            except User.DoesNotExist:
-                return Response({
-                    'status': 'error',
-                    'message': 'No user with such email'
-                }, status=status.HTTP_400_BAD_REQUEST)
-        return Response({
-            'status': 'error',
-            'data': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+            uid = force_text(urlsafe_base64_decode(uid))
+            user = get_object(User, uid, "User")
+            password = request.data.get('password')
+            user.set_password(password)
+            user.save()
+            return custom_reponse(
+                'success', 200, message='Password successfully updated')
+        return custom_reponse('error', 400, serializer=serializer)
