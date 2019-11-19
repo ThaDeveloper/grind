@@ -132,3 +132,13 @@ class SecurityLinkSerializer(serializers.Serializer):
 
 class ResetEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
+class SocialSerializer(serializers.Serializer):
+    """
+    Serializer - accepts access token. For Twitter's Oauth 1 it needs
+    additional acess token secret.
+    """
+    access_token = serializers.CharField(
+        max_length=4096, required=True, trim_whitespace=True)
+    # only for twitter
+    access_token_secret = serializers.CharField(
+        max_length=255, allow_blank=True, default="")

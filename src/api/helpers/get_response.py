@@ -11,12 +11,8 @@ def custom_reponse(
     message = kwargs.get('message')
     error_type = kwargs.get('error_type')
     token = kwargs.get('token')
-    if status == 'error':
-        data = serializer.errors
-    else:
-        data = serializer.data
     if serializer:
-        response['data'] = data
+        response['data'] = serializer.errors if status == 'error' else serializer.data
     if message:
         response['message'] = message
     if error_type:
