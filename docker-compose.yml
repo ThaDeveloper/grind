@@ -1,9 +1,9 @@
-version: '3.6'
+version: "3.6"
 
 services:
   app:
     build: .
-    command: python src/manage.py runserver 0.0.0.0:8000
+    command: python src/manage.py runserver 127.0.0.1:8000
     volumes:
       - .:/source # ensure changes made in the sourcecode are reflected in the container without rebuilding it
     ports:
@@ -20,6 +20,6 @@ services:
       - POSTGRES_USER=grind
       - POSTGRES_PASSWORD=grind
       - POSTGRES_DB=grind
-    ports: 
-     - "5432:5432"
+    ports:
+      - "5432:5432"
     container_name: grind_db

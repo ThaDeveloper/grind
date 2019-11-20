@@ -27,12 +27,12 @@ class SocialAuth:
         except User.DoesNotExist:
             password = User.objects.make_random_password()
             user = User(
-                username=user_info.get('first_name')+str(uuid.uuid1().int)[:3],
+                username=str(user_info.get('first_name')) +
+                str(uuid.uuid1().int)[: 3],
                 email=user_info.get('email'),
                 first_name=user_info.get('first_name'),
                 last_name=user_info.get('last_name'),
-                active=True
-            )
+                active=True)
             user.set_password(password)
             user.save()
             user_details = {

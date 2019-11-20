@@ -33,7 +33,7 @@ update_password = users.UpdatePasswordView.as_view({
 send_reset_email = users.UserViews.as_view({
     'post': 'send_reset_email'
 })
-password_reset_update = users.UpdatePasswordView.as_view({
+password_reset_update = users.UserViews.as_view({
     'post': 'password_reset_update'
 })
 generate_new_link = users.UserViews.as_view({
@@ -48,6 +48,9 @@ google_auth = social_auth.GoogleAuthAPIView.as_view({
 twitter_auth = social_auth.TwitterAuthAPIView.as_view({
     'post': 'post'
 })
+list_users = profiles.ProfileViews.as_view({
+    'get': 'list'
+})
 
 urlpatterns = [
     path('accounts/register/', register, name='create-user'),
@@ -59,9 +62,9 @@ urlpatterns = [
     path(
         'accounts/update-password/', update_password, name='update-password'),
     path(
-        'accounts/password-reset/', send_reset_email, name='reset-password'),
+        'accounts/send-reset/', send_reset_email, name='request-reset'),
     path(
-        'accounts/send-reset/<uid>/<token>/', password_reset_update,
+        'accounts/password-reset/<uid>/<token>/', password_reset_update,
         name='complete-reset'),
     path(
         'accounts/new-link/', generate_new_link, name='generate-new-link'),
@@ -73,4 +76,5 @@ urlpatterns = [
     path('accounts/<pk>/delete/', admin_user_delete, name='admin-delete'),
     path('oauth/facebook/login/', fb_auth, name='facebook-login'),
     path('oauth/google/login/', google_auth, name='google-login'),
-    path('oauth/twitter/login/', twitter_auth, name='twitter-login'), ]
+    path('oauth/twitter/login/', twitter_auth, name='twitter-login'),
+    path('accounts/', list_users, name='list-users')]

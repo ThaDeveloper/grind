@@ -1,13 +1,13 @@
-from api.models import User
+from api.models import Profile, User
 from api.tests.base import BaseTestCase
 
 
 class TestUserModel(BaseTestCase):
     """ User model test cases """
 
-    def test_create_user_success(self):
-        """ Test can add user to db successfully """
-        old_count = User.objects.count()
+    def test_create_user_adds_profile(self):
+        """ Test creating user adds a respective profile """
+        old_count = Profile.objects.count()
         user = User.objects.create(**{
             'first_name': "Erykah",
             'last_name': "Badu",
@@ -16,6 +16,5 @@ class TestUserModel(BaseTestCase):
             'password': "badu",
             'user_type':  "professional"
         })
-        new_count = User.objects.count()
-        self.assertEqual(user.username, 'badu')
+        new_count = Profile.objects.count()
         self.assertEqual(new_count, old_count + 1)

@@ -1,4 +1,4 @@
-import os 
+import os
 
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
@@ -10,16 +10,16 @@ from api.models import User
 def send_account_email(request, subject, path, template):
     token, domain, protocol, uid, time = account_url_metadata(request)
     email = request.data.get('email')
-    user = User.objects.filter(email=email).first()
+    first_name = request.data.get('first_name')
     message = render_to_string(
         template, {
             'domain': domain,
             'uid': uid,
             'token': token,
-            'name': user.first_name,
+            'name': first_name,
             'time': time,
             'link': protocol + domain + path + uid + '/' + token
-    })
+        })
 
     to_email = email
     from_email = os.getenv('DEFAULT_FROM_EMAIL')

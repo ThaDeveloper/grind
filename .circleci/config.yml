@@ -1,8 +1,6 @@
 version: 2
 jobs:
   build:
-    environment:
-      CC_TEST_REPORTER_ID: ${CC_TEST_REPORTER_ID}
     docker:
       - image: circleci/python:3.6
         environment:
@@ -19,6 +17,7 @@ jobs:
         - /ft-.*/
     steps:
       - checkout
+      - setup_remote_docker
       - restore_cache:
           keys:
             - v1-dependencies-{{ .Branch }}-{{ checksum "requirements.txt" }}
@@ -46,10 +45,10 @@ jobs:
             ./cc-test-reporter before-build
             mkdir test-reports
             PYTHONPATH=src coverage run --source=api -m pytest
-            # coverage report
-            # coverage html
-      # - store_test_results:
-      #     path: test-reports
+            coverage report
+            coverage xml
+             # upload test report to Code Climate using `after-build`
+            ./cc-test-reporter after-build --coverage-input-type coverage.py --exit-code $?
       - store_artifacts:
-          path: htmlcov
+          path: coverage.xml
           destination: grind_test_reports

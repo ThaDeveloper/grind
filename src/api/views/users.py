@@ -13,19 +13,20 @@ from django.core.exceptions import ValidationError
 from api.serializers import (
     UserSerializer, LoginSerializer,
     UpdatePasswordSerializer, PasswordResetSerializer,
-    SecurityLinkSerializer
+    SecurityLinkSerializer, ResetEmailSerializer
 )
 from api.helpers.send_emails import send_account_email
 from api.authentication.backends import GrindJWTAuthentication
 from api.models import User
 from api.helpers.jwt import generate_simple_token
 from api.helpers.get_response import custom_reponse
+from api.helpers.get_object import get_object
 
 jwt_auth = GrindJWTAuthentication()
 
 
 class UserViews(ViewSet):
-    """ 
+    """
     New user registration view
     """
     permission_classes = (AllowAny,)
@@ -37,7 +38,7 @@ class UserViews(ViewSet):
             data=request.data, context={'request': request})
         if serializer.is_valid():
             try:
-                send_acccount_email(
+                send_account_email(
                     request, 'Grind - Activate your account',
                     '/api/v1/accounts/activate/', 'confirm_account.html')
             except (SMTPException, IndexError, TypeError) as e:
@@ -48,7 +49,7 @@ class UserViews(ViewSet):
             return custom_reponse(
                 'success', 201, serializer=serializer,
                 message='Registered successfully, check your email to activate your account.')
-        return custom_reponse('error', serializer, 400)
+        return custom_reponse('error', 400, serializer=serializer)
 
     def activate(self, request, uid, token):
         """ Get request for activating user account """
@@ -79,8 +80,8 @@ class UserViews(ViewSet):
             user = serializer.validated_data.get('user')
             auth_login(request, user)
             return custom_reponse(
-                'succes', 200, token=token, message='Login success')
-        return custom_reponse('error', serializer, 400,
+                'succes', 200, token=user.token, message='Login success')
+        return custom_reponse('error', 400, serializer=serializer,
                               message='login_invalid')
 
     def send_reset_email(self, request):
@@ -100,8 +101,28 @@ class UserViews(ViewSet):
             except (SMTPException, IndexError, TypeError):
                 return custom_reponse(
                     'error', 400, message='An error occured, please retry')
-        return custom_reponse('error', serializer, 400,
+        return custom_reponse('error', 400, serializer=serializer,
                               error_type='bad_request')
+
+    def password_reset_update(self, request, uid, token):
+        """ Update the new password to db """
+        decoded_token = jwt_auth.decode_token(token)
+        now = int(datetime.now().strftime('%s'))
+        if now > decoded_token['exp']:
+            # TODO: add generate new link endpoint
+            return custom_reponse('error', 400, message='Link has expired')
+        serializer = PasswordResetSerializer(
+            data=request.data, context={'request': request})
+        if serializer.is_valid():
+            uid = force_text(urlsafe_base64_decode(uid))
+            user = get_object(User, uid, "User")
+            password = request.data.get('password')
+            user.set_password(password)
+            user.save()
+            return custom_reponse(
+                'success', 200, message='Password successfully updated')
+        return custom_reponse(
+            'error', 400, serializer=serializer, error_type='bad_request')
 
     def generate_new_link(self, request):
         """ Generate new link after expiry """
@@ -163,7 +184,7 @@ class UserUpdateDestroy(ViewSet):
             return custom_reponse(
                 'succes', 200, message='Profile updated successfully',
                 serializer=serializer)
-        return custom_reponse('error', serializer, 400,
+        return custom_reponse('error', 400, serializer=serializer,
                               error_type='bad_request')
 
     def logout(self, request):
@@ -176,7 +197,8 @@ class UserUpdateDestroy(ViewSet):
         return custom_reponse('success', 204, message='Deleted successfully')
 
     def admin_delete(self, request, pk):
-        if request.user.has_perm:
+        """ Delete user by ID """
+        if request.user.admin:
             try:
                 User.objects.get(pk=pk).delete()
                 return custom_reponse(
@@ -204,24 +226,6 @@ class UpdatePasswordView(ViewSet):
             user.set_password(passwords.get('new_password'))
             user.save()
             return custom_reponse(
-                'succes', 200, 'Password updated successfully')
-        return custom_reponse('error', serializer, 400)
-
-    def password_reset_update(self, request, uid, token):
-        """ Update the new password to db """
-        decoded_token = jwt_auth.decode_token(token)
-        now = int(datetime.now().strftime('%s'))
-        if now > decoded_token['exp']:
-            # TODO: add generate new link endpoint
-            return custom_reponse('error', 400, message='Link has expired')
-        serializer = PasswordResetSerializer(
-            data=request.data, context={'request': request})
-        if serializer.is_valid():
-            uid = force_text(urlsafe_base64_decode(uid))
-            user = get_object(User, uid, "User")
-            password = request.data.get('password')
-            user.set_password(password)
-            user.save()
-            return custom_reponse(
-                'success', 200, message='Password successfully updated')
-        return custom_reponse('error', 400, serializer=serializer)
+                'succes', 200, message='Password updated successfully')
+        return custom_reponse(
+            'error', 400, serializer=serializer, error_type='bad_request')
