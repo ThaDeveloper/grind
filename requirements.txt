@@ -9,7 +9,7 @@ coverage==4.5.4
 coveralls==1.8.2
 cryptography==2.8
 defusedxml==0.6.0
-Django==2.2.4
+Django==2.2.8
 django-braces==1.13.0
 django-extensions==2.2.5
 django-oauth-toolkit==1.2.0
