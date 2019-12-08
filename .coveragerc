@@ -1,6 +1,10 @@
 [run]
 omit =
   src/api/apps.py,
+  src/api/admin.py,
+  src/api/authentication/*,
+  src/api/helpers/*
+  src/api/models/user_manager.py,
   src/api/migrations/*,
   src/grind/settings/*,
   src/api/tests/*,

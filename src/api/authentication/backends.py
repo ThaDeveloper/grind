@@ -34,7 +34,7 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
                 "status": "error",
                 "message": "Wrong header format"},
                 status.HTTP_400_BAD_REQUEST
-                )
+            )
 
         # since python3 uses byte we have two decode the two header values
         prefix = auth_header[0].decode('utf-8')
@@ -47,11 +47,11 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
                 "status": "error",
                 "message": "Token should be prefixed with `Bearer`"},
                 status.HTTP_400_BAD_REQUEST
-                )
+            )
 
-        # By now, we are confident authentication will succeed to we pass the 
+        # By now, we are confident authentication will succeed to we pass the
         # credentials to the method below
-        #set session
+        # set session
         request.session['grind-jwt-token'] = token
         return self._authenticate_credentials(request, token)
 
@@ -61,7 +61,7 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
         If success: return the user and token.
         If fails: throw an error.
         """
-    
+
         payload = self.decode_token(token)
         try:
             user = User.objects.get(email=payload['email'])
@@ -70,7 +70,8 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
                     'status': "error",
                     'message': "User is inactive."
                 }
-                raise exceptions.AuthenticationFailed(data, status.HTTP_400_BAD_REQUEST)
+                raise exceptions.AuthenticationFailed(
+                    data, status.HTTP_400_BAD_REQUEST)
 
             return (user, token)
         except User.DoesNotExist:
@@ -78,14 +79,15 @@ class GrindJWTAuthentication(authentication.BaseAuthentication):
                 'status': "error",
                 'message': "No user matching credentials was found."
             }
-            raise exceptions.AuthenticationFailed(data, status.HTTP_400_BAD_REQUEST)
-    
+            raise exceptions.AuthenticationFailed(
+                data, status.HTTP_400_BAD_REQUEST)
+
     def decode_token(self, token):
         """Decode token with secret."""
         try:
             return jwt.decode(token,
-                            settings.SECRET_KEY,
-                            algorithms=['HS256'])
+                              settings.SECRET_KEY,
+                              algorithms=['HS256'])
         except jwt.exceptions.ExpiredSignatureError:
             data = {
                 'status': 'error',

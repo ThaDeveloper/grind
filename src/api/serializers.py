@@ -9,16 +9,15 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('id', 'title', 'image', 'bio','phone',
-            'location', 'address_1', 'address_2')
+        fields = ('id', 'title', 'image', 'bio', 'phone',
+                  'location', 'address_1', 'address_2')
         read_only_fields = ('username',)
-
 
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializers new user request."""
-    # password should 8-128 chars and unreadable. Even if 
-    # listed(serializer requirement) under `fields` below 
+    # password should 8-128 chars and unreadable. Even if
+    # listed(serializer requirement) under `fields` below
     # it won't be returned
     password = serializers.CharField(
         max_length=128,
@@ -27,15 +26,14 @@ class UserSerializer(serializers.ModelSerializer):
     )
     profile = ProfileSerializer(required=False)
 
-
     class Meta:
         model = User
-        fields = ("id", "first_name", "last_name", "email",
-        "username", "password", "user_type", "profile", "date_joined")
-    
+        fields = ("id", "first_name", "last_name", "email", "username",
+                  "password", "user_type", "profile", "date_joined")
+
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
-    
+
     def update(self, instance, validated_data):
         """Performs an update on a User/Profile."""
         password = validated_data.pop('password', None)
@@ -53,6 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
         instance.profile.save()
 
         return instance
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.CharField()
@@ -81,9 +80,11 @@ class LoginSerializer(serializers.Serializer):
             })
         return data
 
+
 def match_password(password, confirm_password):
     if password != confirm_password:
-            raise serializers.ValidationError({'password': 'Passwords don\'t match'})
+        raise serializers.ValidationError(
+            {'password': 'Passwords don\'t match'})
 
 
 class UpdatePasswordSerializer(serializers.Serializer):
@@ -96,9 +97,10 @@ class UpdatePasswordSerializer(serializers.Serializer):
         user = self.context.get('request').user
         match_password(data.get('new_password'), data.get('confirm_password'))
         if not user.check_password(data.get('old_password')):
-            raise serializers.ValidationError({'old_password': 'Wrong password'})
+            raise serializers.ValidationError(
+                {'old_password': 'Wrong password'})
         return data
-    
+
     def validate_new_password(self, value):
         validate_password(value)
         return value
@@ -112,7 +114,7 @@ class PasswordResetSerializer(serializers.Serializer):
         """ validate password """
         match_password(data.get('password'), data.get('confirm_password'))
         return data
-    
+
     def validate_password(self, value):
         validate_password(value)
         return value
@@ -132,6 +134,8 @@ class SecurityLinkSerializer(serializers.Serializer):
 
 class ResetEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
+
+
 class SocialSerializer(serializers.Serializer):
     """
     Serializer - accepts access token. For Twitter's Oauth 1 it needs

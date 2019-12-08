@@ -18,20 +18,19 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
         ('professional', 'professional'),
         ('client', 'client')
     ]
-    USERNAME_REGEX = '^[a-zA-Z]{2,}$'
+    USERNAME_REGEX = '^[a-zA-Z]{5,}$'
     first_name = models.CharField(max_length=30, null=False)
     last_name = models.CharField(max_length=30, null=False)
     email = models.EmailField(unique=True, null=False)
     username = models.CharField(
         max_length=30,
         validators=[
-            RegexValidator(regex=USERNAME_REGEX,
-                           message='Username must be 2 or more alphabetic characters',
-                           code='invalid_username'
-            )],
-        unique=True,
-        null=False)
-    password = models.CharField(max_length=128,null=False)
+            RegexValidator(
+                regex=USERNAME_REGEX,
+                message='Username must be 5 or more alphabetic characters',
+                code='invalid_username')],
+        unique=True, null=False)
+    password = models.CharField(max_length=128, null=False)
     active = models.BooleanField(default=True)
     admin = models.BooleanField(default=False)
     staff = models.BooleanField(default=False)
@@ -42,8 +41,8 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username',]
-   
+    REQUIRED_FIELDS = ['username', ]
+
     class Meta:
         """metadata options."""
         ordering = ('pk',)
@@ -57,7 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
     def is_active(self):
         """Check if user is active."""
         return self.active
-    
+
     @property
     def is_staff(self):
         """Check whether user is a staff."""
@@ -74,7 +73,7 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
         Get a user's token by calling `user.token`.
         """
         return self._generate_jwt_token()
-    
+
     def _generate_jwt_token(self):
         """
         Generates a JSON Web Token for access to auth endpoints
@@ -89,10 +88,10 @@ class User(AbstractBaseUser, PermissionsMixin, CommonFields):
         }, settings.SECRET_KEY, algorithm='HS256')
 
         return token.decode('utf-8')
-    
+
     def get_full_name(self):
         return ('%s %s') % (self.first_name, self.last_name)
-    
+
     def get_short_name(self):
         return self.username
 
