@@ -1,0 +1,35 @@
+version: "3.6"
+
+services:
+  app:
+    build:
+      context: ../../
+      dockerfile: docker/test/Dockerfile
+    volumes:
+      - ../../src/:/home/projects/grind
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../.env
+    depends_on:
+      - db
+    container_name: grind_test_app
+    environment:
+      DJANGO_SETTINGS_MODULE: grind.settings.test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: grind
+      DB_HOST: db
+      DB_PORT: 5432
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=grind
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../../.env
+    container_name: grind_test_db

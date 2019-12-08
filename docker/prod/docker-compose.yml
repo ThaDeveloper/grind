@@ -1,0 +1,66 @@
+version: "3.6"
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    volumes:
+      - static_volume:/home/projects/grind/static
+      - media_volume:/home/projects/grind/media
+    ports:
+      - "1337:80"
+    depends_on:
+      - app
+  app:
+    build:
+      context: ../../
+      dockerfile: docker/prod/Dockerfile
+    command: gunicorn grind.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/home/projects/grind/static
+      - media_volume:/home/projects/grind/media
+    ports:
+      - 8000 #only exposed internally to other services. no external machine access
+    # env_file:
+    #   - ../../.env.prod
+    depends_on:
+      - db
+    container_name: grind_app_prod
+    environment:
+      DJANGO_SETTINGS_MODULE: grind.settings.prod
+      DB_USER: grind
+      DB_PASSWORD: grind
+      DB_NAME: grind
+      DB_HOST: db
+      DB_PORT: 5432
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/api/v1/accounts/"] # TODO: add a testing endoint
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    stdin_open: true #interactive debugging
+    tty: true
+  db:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: always
+    environment:
+      - POSTGRES_USER=grind
+      - POSTGRES_PASSWORD=grind
+      - POSTGRES_DB=grind
+    ports:
+      - "5432:5432"
+    # env_file:
+    #   - ../../.env.prod
+    container_name: grind_db_prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 0.0.0.0 -p 5432 -U grind"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

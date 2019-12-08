@@ -1,20 +1,15 @@
-version: 2
+version: 2.1
 jobs:
-  build:
+  build_test:
     docker:
       - image: circleci/python:3.6
         environment:
           DJANGO_SETTINGS_MODULE: grind.settings.test
       - image: circleci/postgres:11.3
-        environment: # environment variables for the Postgres container.
-          POSTGRES_USER: postgres
+        environment:
+          POSTGRES_USER: circleci
           POSTGRES_DB: grind
     working_directory: ~/grind
-    branches:
-      only:
-        - master
-        - /ch-.*/
-        - /ft-.*/
     steps:
       - checkout
       - setup_remote_docker
@@ -25,13 +20,13 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            python3 -m venv env
-            . env/bin/activate
+            python3 -m venv venv
+            . venv/bin/activate
             pip install -r requirements.txt
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
-            - ./env
+            - ./venv
       - run:
           name: Install Code Climate Test Reporter
           command: |
@@ -40,7 +35,7 @@ jobs:
       - run:
           name: Running tests
           command: |
-            . env/bin/activate
+            . venv/bin/activate
             # notify Code Climate of a pending test report using `before-build`
             ./cc-test-reporter before-build
             mkdir test-reports
@@ -52,3 +47,27 @@ jobs:
       - store_artifacts:
           path: coverage.xml
           destination: grind_test_reports
+  build_push_image:
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          DJANGO_SETTINGS_MODULE: grind.settings.prod
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build production container(s)
+          command: make prod
+      - run:
+          name: Tag and push container(s) to ECR
+          command: chmod +x bash/deploy.sh && bash/deploy.sh
+workflows:
+  build_test_deploy:
+    jobs:
+      - build_test
+      - build_push_image:
+          requires:
+            - build_test
+          filters:
+            branches:
+              only: master

@@ -25,7 +25,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', '#$@#$*120----')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost.com']
+ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost.com', 'localhost']
 
 
 # Application definition
@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -90,9 +91,9 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
+DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_NAME = os.getenv('DB_NAME')
-DB_PORT = os.getenv('DB_PORT')
+DB_PORT = os.getenv('DB_PORT', '5432')
 
 DATABASES = {
     'default': {
@@ -104,7 +105,6 @@ DATABASES = {
         'PORT': DB_PORT
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -136,8 +136,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
 
-# +
 AUTH_USER_MODEL = "api.User"
 CORS_ORIGIN_ALLOW_ALL = True
 EMAIL_USE_TLS = True
