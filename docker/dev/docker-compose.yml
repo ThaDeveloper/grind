@@ -1,0 +1,53 @@
+version: "3.6"
+
+services:
+  app:
+    image: app:python_dev_service
+    build:
+      context: ../../
+      dockerfile: docker/dev/Dockerfile
+    command: gunicorn --workers=3 grind.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ../../src/:/home/projects/grind # ensure changes made in the sourcecode are reflected in the container without rebuilding it
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../.env
+    depends_on:
+      - db
+    container_name: grind_app
+    environment:
+      DJANGO_SETTINGS_MODULE: grind.settings.dev
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: grind
+      DB_HOST: db
+      DB_PORT: 5432
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/api/v1/accounts/"] # TODO: add a testing endoint
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    stdin_open: true #interactive debugging
+    tty: true
+  db:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=grind
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../../.env
+    container_name: grind_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 0.0.0.0 -p 5432 -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  postgres_data:

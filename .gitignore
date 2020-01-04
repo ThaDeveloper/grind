@@ -1,6 +1,7 @@
 __pycache__
 venv
 .env
+.env.prod
 *.pyc
 DS_Store
 settings.json
@@ -9,3 +10,11 @@ settings.json
 .pytest_cache
 .coverage
 htmlcov
+coverage.xml
+static
+debug.log
+.aws
+.env-secrets.txt
+.docker
+ecs-service.json
+task-definition.json
