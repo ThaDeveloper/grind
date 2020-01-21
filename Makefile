@@ -29,9 +29,11 @@ run_dev:
 down:
 	@${DOCKER_DEV_COMPOSE} down
 db:
-	@ docker run -it grind_db psql -U postgres
+	@echo "Starting grind_db container..."
+	@docker exec -it grind_db psql -U postgres
 app:
-	@ docker run -it grind_app bash
+	@echo "Start grind app service..."
+	@${DOCKER_DEV_COMPOSE} run --rm app bash
 test:
 	${INFO} "Building required images for testing"
 	@ echo " "

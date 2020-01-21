@@ -150,3 +150,6 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 # twitter social auth
 TWITTER_CONSUMER_KEY = os.getenv('TWITTER_CONSUMER_KEY')
 TWITTER_CONSUMER_SECRET = os.getenv('TWITTER_CONSUMER_SECRET')
+
+# celery
+CELERY_BROKER_URL = 'amqp://rabbitmq'

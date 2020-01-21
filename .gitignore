@@ -18,3 +18,5 @@ debug.log
 .docker
 ecs-service.json
 task-definition.json
+*.log
+*.pid

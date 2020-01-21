@@ -1,21 +1,22 @@
 version: "3.6"
 
 services:
-  app:
-    image: app:python_dev_service
+  app: &app
+    restart: always
     build:
       context: ../../
       dockerfile: docker/dev/Dockerfile
-    command: gunicorn --workers=3 grind.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn --workers=3 grind.wsgi:application --reload --bind 0.0.0.0:8000
     volumes:
-      - ../../src/:/home/projects/grind # ensure changes made in the sourcecode are reflected in the container without rebuilding it
+      - ../../src/:/home/projects/grind # hot reload
     ports:
       - "8000:8000"
     env_file:
       - ../../.env
     depends_on:
       - db
-    container_name: grind_app
+      - rabbitmq
+      - celery
     environment:
       DJANGO_SETTINGS_MODULE: grind.settings.dev
       DB_USER: postgres
@@ -24,7 +25,7 @@ services:
       DB_HOST: db
       DB_PORT: 5432
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/api/v1/accounts/"] # TODO: add a testing endoint
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/api/v1/accounts/"]
       interval: 5s
       timeout: 10s
       retries: 3
@@ -49,5 +50,29 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+  rabbitmq:
+    image: rabbitmq:3.7-alpine
+    env_file:
+      - ../../.env
+    ports:
+      - 5672:5672
+  celery:
+    # Run our `app` with the celery service
+    <<: *app
+    command: celery -A grind worker --loglevel=info
+    # disable ports to prevent conflict
+    env_file:
+      - ../../.env
+    environment:
+      DJANGO_SETTINGS_MODULE: grind.settings.dev
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: grind
+      DB_HOST: db
+      DB_PORT: 5432
+    ports: []
+    depends_on:
+      - rabbitmq
+      - db
 volumes:
   postgres_data:

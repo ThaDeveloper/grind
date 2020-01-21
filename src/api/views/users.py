@@ -21,6 +21,7 @@ from api.models import User
 from api.helpers.jwt import generate_simple_token
 from api.helpers.get_response import custom_reponse
 from api.helpers.get_object import get_object
+from api.tasks import send_email
 
 jwt_auth = GrindJWTAuthentication()
 
@@ -38,6 +39,7 @@ class UserViews(ViewSet):
             data=request.data, context={'request': request})
         if serializer.is_valid():
             try:
+                send_email()
                 send_account_email(
                     request, 'Grind - Activate your account',
                     '/api/v1/accounts/activate/', 'confirm_account.html')
