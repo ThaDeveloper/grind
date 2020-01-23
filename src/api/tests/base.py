@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from unittest.mock import patch
 
 from api.helpers.jwt import generate_simple_token
 from api.models import User
@@ -56,7 +57,8 @@ class BaseTestCase(APITestCase):
                 HTTP_AUTHORIZATION='Bearer {}'.format(jwt_token))
         return client
 
-    def create_user(self, user):
+    @patch('api.tasks.send_account_email_task.delay')
+    def create_user(self, user, mock_obj):
         return self.test_client().post('/api/v1/accounts/register/', user)
 
     def activate_user(self, email):

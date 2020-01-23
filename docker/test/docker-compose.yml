@@ -9,10 +9,13 @@ services:
       - ../../src/:/home/projects/grind
     ports:
       - "8000:8000"
+      - "4444:4444"
     env_file:
       - ../../.env
     depends_on:
       - db
+    stdin_open: true
+    tty: true
     container_name: grind_test_app
     environment:
       DJANGO_SETTINGS_MODULE: grind.settings.test

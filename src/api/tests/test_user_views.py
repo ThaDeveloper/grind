@@ -63,7 +63,7 @@ class TestUserViews(BaseTestCase):
             '"badass" is not a valid choice.',
             str(response.data['data']['user_type'][0]))
 
-    @patch('api.views.users.send_account_email')
+    @patch('api.tasks.send_account_email_task.delay')
     def test_registration_success(self, mock_object):
         """ Test user is created successfully and activation email sent """
         response = self.test_client().post('/api/v1/accounts/register/', self.new_user)
@@ -72,9 +72,9 @@ class TestUserViews(BaseTestCase):
         self.assertIn('Registered successfully', response.data['message'])
         assert mock_object.called
         mail_args = mock_object.call_args[0]
-        to_email = mail_args[0].__dict__['_full_data']['email']
+        to_email = dict(mail_args[0])['email'][0]
         self.assertEqual(to_email, 'erykah@grind.com')
-        assert mail_args[1] == 'Grind - Activate your account'
+        assert mail_args[3] == 'Grind - Activate your account'
 
     def test_activate_user(self):
         """ Test user can activate successully and redirect """
@@ -108,7 +108,8 @@ class TestUserViews(BaseTestCase):
         self.assertIn('Login success', str(response.data))
         self.assertIn('token', str(response.data))
 
-    def test_send_reset_request(self):
+    @patch('api.tasks.send_account_email_task.delay')
+    def test_send_reset_request(self, mock_object):
         """ Test user can request password reset """
         email = {
             "email": "erykah@grind.com"
@@ -116,10 +117,11 @@ class TestUserViews(BaseTestCase):
         self.create_user(self.new_user)
         response = self.test_client().post('/api/v1/accounts/send-reset/', email)
         self.assertEqual(200, response.status_code)
-        # 2 emails: account creation, password reset
-        self.assertEqual(len(mail.outbox), 2)
-        self.assertEqual(mail.outbox[0].subject,
-                         'Grind - Activate your account')
+        assert mock_object.called
+        mail_args = mock_object.call_args[0]
+        to_email = dict(mail_args[0])['email'][0]
+        self.assertEqual(to_email, 'erykah@grind.com')
+        assert mail_args[3] == 'Grind - Password Reset'
 
     def test_cannot_reset_noexistant_user(self):
         """ Test user reset fails if user is not a memmber """
@@ -130,7 +132,7 @@ class TestUserViews(BaseTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('User not found', str(response.data))
 
-    @patch('api.views.users.send_account_email')
+    @patch('api.tasks.send_account_email_task.delay')
     def test_can_generate_new_security_link(self, mock_object):
         """ Test user can generate new link after expiry """
         user = {
