@@ -15,13 +15,12 @@ from api.serializers import (
     UpdatePasswordSerializer, PasswordResetSerializer,
     SecurityLinkSerializer, ResetEmailSerializer
 )
-from api.helpers.send_emails import send_account_email
 from api.authentication.backends import GrindJWTAuthentication
 from api.models import User
 from api.helpers.jwt import generate_simple_token
 from api.helpers.get_response import custom_reponse
 from api.helpers.get_object import get_object
-from api.tasks import send_email
+from api.tasks import send_account_email_task
 
 jwt_auth = GrindJWTAuthentication()
 
@@ -39,9 +38,12 @@ class UserViews(ViewSet):
             data=request.data, context={'request': request})
         if serializer.is_valid():
             try:
-                send_email()
-                send_account_email(
-                    request, 'Grind - Activate your account',
+                data = request.data
+                host = request.get_host()
+                protocol_secure = request.is_secure()
+                send_account_email_task.delay(
+                    data, host, protocol_secure,
+                    'Grind - Activate your account',
                     '/api/v1/accounts/activate/', 'confirm_account.html')
             except (SMTPException, IndexError, TypeError) as e:
                 return custom_reponse(
@@ -93,12 +95,15 @@ class UserViews(ViewSet):
         if serializer.is_valid():
             try:
                 get_object(User, email, "User")
-                send_account_email(
-                    request, 'Grind - Password Reset',
+                data = request.data
+                host = request.get_host()
+                protocol_secure = request.is_secure()
+                send_account_email_task.delay(
+                    data, host, protocol_secure, 'Grind - Password Reset',
                     '/api/v1/accounts/send-reset/', 'password_reset.html')
                 # TODO: to update link to web-app reset password page
                 return custom_reponse(
-                    'succes', 200,
+                    'success', 200,
                     message="A reset link has been sent to your email")
             except (SMTPException, IndexError, TypeError):
                 return custom_reponse(
@@ -142,8 +147,11 @@ class UserViews(ViewSet):
                     path = '/api/v1/accounts/send-reset/'
                     subject = 'Grind - Password Reset'
                     template = 'password_reset.html'
-                send_account_email(
-                    request, subject,
+                data = request.data
+                host = request.get_host()
+                protocol_secure = request.is_secure()
+                send_account_email_task.delay(
+                    data, host, protocol_secure, subject,
                     path, template)
                 return custom_reponse(
                     'succes', 200,

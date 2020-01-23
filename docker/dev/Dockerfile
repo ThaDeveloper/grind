@@ -9,6 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE 1
 #python output set straight to terminal without buffering
 ENV PYTHONUNBUFFERED 1
 
+ENV COLUMNS=80
+
 RUN mkdir -p /home/projects/grind
 WORKDIR /home/projects/grind
 COPY ./requirements.txt /home/projects/grind/requirements.txt

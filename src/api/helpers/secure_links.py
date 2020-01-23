@@ -7,16 +7,15 @@ from api.models import User
 from api.helpers.jwt import generate_simple_token
 
 
-def account_url_metadata(request):
-    token = generate_simple_token(request.data.get('email'))
-    domain = request.get_host()
-    if request.is_secure():
-            protocol = "https://"
+def account_url_metadata(data, host, protocol_secure):
+    token = generate_simple_token(data.get('email'))
+    if protocol_secure:
+        protocol = "https://"
     else:
-            protocol = "http://"
+        protocol = "http://"
     uid = urlsafe_base64_encode(force_bytes(
-            request.data.get('email')))
+        data.get('email')))
     time = datetime.now()
     time = datetime.strftime(time, '%d-%B-%Y %H:%M')
 
-    return (token, domain, protocol, uid, time)
+    return (token, host, protocol, uid, time)
